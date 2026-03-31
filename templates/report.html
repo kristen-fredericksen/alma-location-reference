@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alma Location Reference{% if not multi_campus %} — {{ campus }}{% endif %}</title>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.5; }
+.header-bg { background: #1a3a5c; }
+.header { max-width: 1200px; margin: 0 auto; padding: 20px 30px; display: flex; align-items: center; gap: 20px; color: white; }
+.header img { height: 45px; }
+.header-text h1 { font-size: 1.5em; font-weight: 600; }
+.nav-bg { background: #fff; border-bottom: 1px solid #ddd; }
+.nav { max-width: 1200px; margin: 0 auto; padding: 10px 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+.nav button { padding: 8px 16px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+.nav button.active { background: #1a3a5c; color: white; border-color: #1a3a5c; }
+.nav button:hover:not(.active) { background: #f0f0f0; }
+.nav select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em; }
+{% if multi_campus %}.nav .campus-select { margin-left: auto; font-weight: 500; min-width: 250px; }{% endif %}
+.container { max-width: 1200px; margin: 0 auto; padding: 20px 30px; }
+.form-link { background: #e8f4e8; border: 1px solid #8bc48b; border-radius: 6px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+.form-link a { color: #1a3a5c; font-weight: 600; text-decoration: none; }
+.form-link a:hover { text-decoration: underline; }
+
+/* DataTables overrides */
+.loc-dt-wrapper { background: white; border-radius: 6px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.loc-dt-wrapper table thead th { background: #1a3a5c; color: white; font-size: 0.85em; }
+.loc-dt-wrapper table tbody td { font-size: 0.85em; }
+.dataTables_filter input { border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; }
+
+/* FU groups view */
+.fu-card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+.fu-card-header { background: #1a3a5c; color: white; padding: 12px 16px; font-weight: 600; display: flex; justify-content: space-between; }
+.fu-card-body { padding: 16px; }
+.fu-table thead th { background: #1a3a5c; color: white; font-size: 0.85em; }
+.fu-table tbody td { font-size: 0.85em; }
+.fu-hint { margin-top: 10px; font-size: 0.8em; color: #888; font-style: italic; }
+
+/* TOU browser */
+.tou-sub-nav { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
+.tou-sub-nav button { padding: 6px 14px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+.tou-sub-nav button.active { background: #1a3a5c; color: white; border-color: #1a3a5c; }
+.tou-sub-nav button:hover:not(.active) { background: #f0f0f0; }
+.tou-sub-nav select { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85em; }
+.tou-card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; overflow: hidden; }
+.tou-card-header { background: #f8f9fa; padding: 12px 16px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.tou-card-header:hover { background: #eef2f7; }
+.tou-card-header h3 { font-size: 0.95em; color: #1a3a5c; }
+.tou-card-body { padding: 16px; display: none; }
+.tou-card-body.visible { display: block; }
+.tou-desc { font-size: 0.85em; color: #666; margin-bottom: 10px; font-style: italic; }
+.section-header { font-size: 0.8em; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.section-header:first-child { margin-top: 0; }
+.policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+.policy-item { font-size: 0.85em; padding: 4px 0; }
+.policy-item .label { color: #666; }
+.policy-item .value { font-weight: 500; }
+
+/* Comparison table */
+.compare-table { width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.82em; }
+.compare-table th { background: #1a3a5c; color: white; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+.compare-table th.rotate { writing-mode: vertical-lr; transform: rotate(180deg); text-align: right; padding: 10px 6px; max-width: 40px; }
+.compare-table td { padding: 6px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+.compare-table tr:hover { background: #f8f9fa; }
+.compare-table td.empty { color: #ccc; }
+.compare-table .tou-name-cell { font-weight: 500; color: #1a3a5c; white-space: normal; min-width: 180px; }
+.compare-wrapper { overflow-x: auto; }
+
+/* Welcome prompt */
+.welcome { text-align: center; padding: 60px 20px; color: #888; }
+.welcome h2 { color: #1a3a5c; margin-bottom: 10px; font-size: 1.3em; }
+.welcome p { font-size: 1em; }
+
+.hidden { display: none; }
+.count { font-size: 0.85em; color: #666; margin-bottom: 15px; }
+.generated { font-size: 0.8em; color: #999; text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header-bg">
+<div class="header">
+    {% if logo_b64 %}
+    <img src="data:image/png;base64,{{ logo_b64 }}" alt="CUNY Library Services">
+    {% endif %}
+    <div class="header-text">
+        {% if multi_campus %}
+        <h1>Alma Location Reference</h1>
+        {% else %}
+        <h1>Alma Location Reference — {{ campus }}</h1>
+        {% endif %}
+    </div>
+</div>
+</div>
+
+<div class="nav-bg">
+<div class="nav">
+    <button class="active" onclick="showView('locations', event)">All Locations</button>
+    <button onclick="showView('fu-groups', event)">By Fulfillment Unit</button>
+    <button onclick="showView('tou-browser', event)">Loan Policies (TOUs)</button>
+    {% if multi_campus %}
+    <select class="campus-select" id="campus-select" onchange="switchCampus(this.value)">
+        <option value="">Select your campus...</option>
+        {% for code, name in campus_names|dictsort(by='value') %}
+        {% if code in campuses %}
+        <option value="{{ code }}">{{ name }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% endif %}
+</div>
+</div>
+
+<div class="container">
+    <div class="form-link">
+        <div>Ready to request a new location or change?</div>
+        <a href="https://cuny.libwizard.com/f/alma-location-form" target="_blank">Open Location Request Form &rarr;</a>
+    </div>
+
+    {% if multi_campus %}
+    <!-- Welcome screen shown before campus selection -->
+    <div id="welcome">
+        <div class="welcome">
+            <h2>Welcome</h2>
+            <p>Select your campus from the dropdown above to view locations and policies.</p>
+        </div>
+    </div>
+
+    <!-- Per-campus content (hidden until selected) -->
+    {% for campus_code, campus_data in campuses|dictsort %}
+    <div class="campus-content hidden" data-campus="{{ campus_code }}">
+
+        <!-- View 1: Locations -->
+        <div class="view-panel" data-view="locations">
+            <div class="loc-dt-wrapper">
+            <table class="loc-table display" data-campus="{{ campus_code }}" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Library</th>
+                        <th>Type</th>
+                        <th>Fulfillment Unit</th>
+                        <th>Call Number Type</th>
+                        <th>Suppressed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lib in campus_data.libraries %}
+                    {% for loc in lib.locations %}
+                    <tr>
+                        <td>{{ loc.code }}</td>
+                        <td>{{ loc.name }}</td>
+                        <td>{{ lib.name }}</td>
+                        <td>{{ loc.type }}</td>
+                        <td>{{ loc.fulfillment_unit_code }}</td>
+                        <td>{{ loc.call_number_type or '' }}</td>
+                        <td>{{ 'Yes' if loc.suppress_from_publishing else '' }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- View 2: FU Groups -->
+        <div class="view-panel hidden" data-view="fu-groups">
+            <p class="count">Locations that share a fulfillment unit circulate the same way. Use the location code when filling out the request form.</p>
+            {% for fu_name, fu_data in campus_data.fu_groups|dictsort %}
+            <div class="fu-card">
+                <div class="fu-card-header">
+                    <span>{{ fu_name }}</span>
+                    <span>{{ fu_data.locations|length }} location{{ 's' if fu_data.locations|length != 1 else '' }}</span>
+                </div>
+                <div class="fu-card-body">
+                    <table class="fu-table display" style="width:100%">
+                        <thead><tr><th>Code</th><th>Name</th><th>Library</th></tr></thead>
+                        <tbody>
+                            {% for loc in fu_data.locations %}
+                            <tr><td>{{ loc.code }}</td><td>{{ loc.name }}</td><td>{{ loc.library }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="fu-hint">All {{ fu_data.locations|length }} location{{ 's' if fu_data.locations|length != 1 else '' }} above share the "{{ fu_name }}" fulfillment unit. To create a new location that circulates like one of these, use its code on the request form.</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- View 3: TOU Browser -->
+        <div class="view-panel hidden" data-view="tou-browser">
+            <div class="tou-sub-nav">
+                <button class="active" onclick="showTouSubView('cards', event, '{{ campus_code }}')">Card View</button>
+                <button onclick="showTouSubView('compare', event, '{{ campus_code }}')">Table View</button>
+                <select class="policy-type-filter" data-campus="{{ campus_code }}" onchange="onPolicyTypeChange(this.value, '{{ campus_code }}')">
+                    <option value="">Filter by policy type...</option>
+                </select>
+                <select class="policy-value-filter hidden" data-campus="{{ campus_code }}" onchange="filterTouByPolicyValue('{{ campus_code }}')">
+                    <option value="">All values</option>
+                </select>
+                <button class="clear-filter hidden" data-campus="{{ campus_code }}" onclick="clearPolicyFilter('{{ campus_code }}')">Clear</button>
+            </div>
+            <div class="tou-cards-container" data-campus="{{ campus_code }}">
+                {% for tou_name, tou_data in campus_data.all_tous|dictsort %}
+                <div class="tou-card" data-tou-name="{{ tou_name }}">
+                    <div class="tou-card-header" onclick="this.nextElementSibling.classList.toggle('visible')">
+                        <h3>{{ tou_name }}</h3>
+                    </div>
+                    <div class="tou-card-body">
+                        {% if tou_data.tou_description %}
+                        <div class="tou-desc">{{ tou_data.tou_description }}</div>
+                        {% endif %}
+                        {% for section, policies in group_policies(tou_data.policies).items() %}
+                        {% if policies %}
+                        <div class="section-header">{{ section }}</div>
+                        <div class="policy-grid">
+                            {% for p in policies %}
+                            <div class="policy-item">
+                                <span class="label">{{ p.type or p.name }}:</span>
+                                <span class="value">{{ p.value }} {{ p.unit }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="tou-compare-container hidden" data-campus="{{ campus_code }}">
+                <div class="compare-wrapper">
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>TOU Name</th>
+                                {% for pt in policy_types %}
+                                <th class="rotate">{{ pt }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tou_name, tou_data in campus_data.all_tous|dictsort %}
+                            <tr data-tou-name="{{ tou_name }}">
+                                <td class="tou-name-cell">{{ tou_name }}</td>
+                                {% for pt in policy_types %}
+                                {% set match = tou_data.policies|selectattr('type', 'eq', pt)|first %}
+                                {% if match %}
+                                <td>{{ match.value }} {{ match.unit }}</td>
+                                {% else %}
+                                <td class="empty">&mdash;</td>
+                                {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    {# Single-campus mode (unchanged) #}
+    <div id="view-locations">
+        <div class="loc-dt-wrapper">
+        <table id="loc-table" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Code</th><th>Name</th><th>Library</th><th>Type</th>
+                    <th>Fulfillment Unit</th><th>Call Number Type</th><th>Suppressed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lib in libraries %}
+                {% for loc in lib.locations %}
+                <tr>
+                    <td>{{ loc.code }}</td><td>{{ loc.name }}</td><td>{{ lib.name }}</td>
+                    <td>{{ loc.type }}</td><td>{{ loc.fulfillment_unit_code }}</td>
+                    <td>{{ loc.call_number_type or '' }}</td>
+                    <td>{{ 'Yes' if loc.suppress_from_publishing else '' }}</td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div id="view-fu-groups" class="hidden">
+        <p class="count">Locations that share a fulfillment unit circulate the same way.</p>
+        {% for fu_name, fu_data in fu_groups|dictsort %}
+        <div class="fu-card">
+            <div class="fu-card-header"><span>{{ fu_name }}</span><span>{{ fu_data.locations|length }} locations</span></div>
+            <div class="fu-card-body">
+                <table class="fu-table display" style="width:100%">
+                    <thead><tr><th>Code</th><th>Name</th><th>Library</th></tr></thead>
+                    <tbody>
+                        {% for loc in fu_data.locations %}
+                        <tr><td>{{ loc.code }}</td><td>{{ loc.name }}</td><td>{{ loc.library }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div id="view-tou-browser" class="hidden">
+        <div class="tou-sub-nav">
+            <button class="active" onclick="showTouSubView('cards', event)">Card View</button>
+            <button onclick="showTouSubView('compare', event)">Table View</button>
+            <select id="policy-type-filter" onchange="onPolicyTypeChange(this.value)">
+                <option value="">Filter by policy type...</option>
+            </select>
+            <select id="policy-value-filter" onchange="filterTouByPolicyValue()" class="hidden">
+                <option value="">All values</option>
+            </select>
+            <button id="clear-filter" class="hidden" onclick="clearPolicyFilter()">Clear</button>
+        </div>
+        <div id="tou-cards">
+            {% for tou_name, tou_data in all_tous|dictsort %}
+            <div class="tou-card" data-tou-name="{{ tou_name }}">
+                <div class="tou-card-header" onclick="this.nextElementSibling.classList.toggle('visible')"><h3>{{ tou_name }}</h3></div>
+                <div class="tou-card-body">
+                    {% if tou_data.tou_description %}<div class="tou-desc">{{ tou_data.tou_description }}</div>{% endif %}
+                    {% for section, policies in group_policies(tou_data.policies).items() %}
+                    {% if policies %}
+                    <div class="section-header">{{ section }}</div>
+                    <div class="policy-grid">
+                        {% for p in policies %}
+                        <div class="policy-item"><span class="label">{{ p.type or p.name }}:</span> <span class="value">{{ p.value }} {{ p.unit }}</span></div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="tou-compare" class="hidden">
+            <div class="compare-wrapper">
+                <table class="compare-table">
+                    <thead><tr><th>TOU Name</th>{% for pt in policy_types %}<th class="rotate">{{ pt }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                        {% for tou_name, tou_data in all_tous|dictsort %}
+                        <tr data-tou-name="{{ tou_name }}">
+                            <td class="tou-name-cell">{{ tou_name }}</td>
+                            {% for pt in policy_types %}
+                            {% set match = tou_data.policies|selectattr('type', 'eq', pt)|first %}
+                            {% if match %}<td>{{ match.value }} {{ match.unit }}</td>{% else %}<td class="empty">&mdash;</td>{% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="generated">Generated {{ generated_date }} | Data is one day behind (Analytics)</div>
+
+<!-- jQuery + DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+<script>
+const IS_MULTI = {{ 'true' if multi_campus else 'false' }};
+let currentCampus = null;
+let currentView = 'locations';
+const initializedTables = new Set();
+
+// ── Campus switching (multi-campus mode) ──
+function switchCampus(code) {
+    if (!code) return;
+    currentCampus = code;
+
+    // Hide welcome, show selected campus
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.classList.add('hidden');
+
+    document.querySelectorAll('.campus-content').forEach(el => {
+        el.classList.toggle('hidden', el.dataset.campus !== code);
+    });
+
+    // Show the correct view within the campus
+    const campusEl = document.querySelector(`.campus-content[data-campus="${code}"]`);
+    if (campusEl) {
+        campusEl.querySelectorAll('.view-panel').forEach(vp => {
+            vp.classList.toggle('hidden', vp.dataset.view !== currentView);
+        });
+    }
+
+    // Initialize DataTables for this campus if not done yet
+    initTablesForCampus(code);
+
+    // Build policy index for this campus
+    buildPolicyIndexForCampus(code);
+}
+
+function initTablesForCampus(code) {
+    const key = 'loc-' + code;
+    if (!initializedTables.has(key)) {
+        const locTable = document.querySelector(`.loc-table[data-campus="${code}"]`);
+        if (locTable) {
+            $(locTable).DataTable({
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[2, 'asc'], [0, 'asc']],
+                columns: [null, null, null, null, null, {defaultContent: ''}, {defaultContent: ''}]
+            });
+        }
+        initializedTables.add(key);
+    }
+}
+
+function initFuTablesForCampus(code) {
+    const key = 'fu-' + code;
+    if (!initializedTables.has(key)) {
+        const campusEl = document.querySelector(`.campus-content[data-campus="${code}"]`);
+        if (campusEl) {
+            $(campusEl).find('.fu-table').DataTable({
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[0, 'asc']]
+            });
+        }
+        initializedTables.add(key);
+    }
+}
+
+// ── View switching ──
+function showView(view, evt) {
+    currentView = view;
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    evt.target.classList.add('active');
+
+    if (IS_MULTI) {
+        if (!currentCampus) return;
+        const campusEl = document.querySelector(`.campus-content[data-campus="${currentCampus}"]`);
+        if (campusEl) {
+            campusEl.querySelectorAll('.view-panel').forEach(vp => {
+                vp.classList.toggle('hidden', vp.dataset.view !== view);
+            });
+        }
+        if (view === 'fu-groups') initFuTablesForCampus(currentCampus);
+    } else {
+        document.getElementById('view-locations').classList.toggle('hidden', view !== 'locations');
+        document.getElementById('view-fu-groups').classList.toggle('hidden', view !== 'fu-groups');
+        document.getElementById('view-tou-browser').classList.toggle('hidden', view !== 'tou-browser');
+        if (view === 'fu-groups' && !initializedTables.has('fu-single')) {
+            $('.fu-table').DataTable({ pageLength: 25, lengthMenu: [10, 25, 50, 100], order: [[0, 'asc']] });
+            initializedTables.add('fu-single');
+        }
+    }
+}
+
+// ── TOU sub-view switching ──
+function showTouSubView(subView, evt, campusCode) {
+    const nav = evt.target.closest('.tou-sub-nav');
+    nav.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    evt.target.classList.add('active');
+
+    if (IS_MULTI && campusCode) {
+        const cardsEl = document.querySelector(`.tou-cards-container[data-campus="${campusCode}"]`);
+        const compareEl = document.querySelector(`.tou-compare-container[data-campus="${campusCode}"]`);
+        if (cardsEl) cardsEl.classList.toggle('hidden', subView !== 'cards');
+        if (compareEl) compareEl.classList.toggle('hidden', subView !== 'compare');
+    } else {
+        document.getElementById('tou-cards').classList.toggle('hidden', subView !== 'cards');
+        document.getElementById('tou-compare').classList.toggle('hidden', subView !== 'compare');
+    }
+}
+
+// ── Policy filtering ──
+let policyIndexes = {};
+
+function buildPolicyIndexForCampus(code) {
+    if (policyIndexes[code]) return;
+    const campusEl = document.querySelector(`.campus-content[data-campus="${code}"]`);
+    if (!campusEl) return;
+
+    const index = {};
+    campusEl.querySelectorAll('.tou-card').forEach(card => {
+        const touName = card.dataset.touName;
+        card.querySelectorAll('.policy-item').forEach(item => {
+            const labelEl = item.querySelector('.label');
+            const valueEl = item.querySelector('.value');
+            if (!labelEl) return;
+            const pType = labelEl.textContent.replace(':', '').trim();
+            const pValue = valueEl ? valueEl.textContent.trim() : '';
+            if (!pType) return;
+            if (!index[pType]) index[pType] = {};
+            if (!index[pType][pValue]) index[pType][pValue] = [];
+            index[pType][pValue].push(touName);
+        });
+    });
+
+    // Add "(none)" entries
+    const allTouNames = Array.from(campusEl.querySelectorAll('.tou-card')).map(c => c.dataset.touName);
+    for (const [pType, valMap] of Object.entries(index)) {
+        const covered = new Set(Object.values(valMap).flat());
+        const missing = allTouNames.filter(n => !covered.has(n));
+        if (missing.length > 0) index[pType]['(none)'] = missing;
+    }
+
+    policyIndexes[code] = index;
+
+    // Populate the type dropdown for this campus
+    const select = campusEl.querySelector('.policy-type-filter');
+    if (select) {
+        select.innerHTML = '<option value="">Filter by policy type...</option>';
+        Object.keys(index).sort().forEach(pt => {
+            const opt = document.createElement('option');
+            opt.value = pt;
+            opt.textContent = pt;
+            select.appendChild(opt);
+        });
+    }
+}
+
+function onPolicyTypeChange(policyType, campusCode) {
+    const code = campusCode || currentCampus;
+    const campusEl = code ? document.querySelector(`.campus-content[data-campus="${code}"]`) : document;
+    const valueSelect = campusEl ? campusEl.querySelector('.policy-value-filter') : document.getElementById('policy-value-filter');
+    const clearBtn = campusEl ? campusEl.querySelector('.clear-filter') : document.getElementById('clear-filter');
+
+    if (!policyType) {
+        if (valueSelect) valueSelect.classList.add('hidden');
+        if (clearBtn) clearBtn.classList.add('hidden');
+        resetTouFilter(code);
+        return;
+    }
+
+    const index = code ? (policyIndexes[code] || {}) : {};
+    const values = index[policyType] || {};
+    if (valueSelect) {
+        valueSelect.innerHTML = '<option value="">All values</option>';
+        const sorted = Object.keys(values).filter(k => k !== '(none)').sort((a, b) => {
+            const na = parseFloat(a), nb = parseFloat(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
+        if (values['(none)']) sorted.push('(none)');
+        sorted.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v === '(none)' ? '(none)' : v;
+            valueSelect.appendChild(opt);
+        });
+        valueSelect.classList.remove('hidden');
+    }
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    filterTouByPolicyValue(code);
+}
+
+function filterTouByPolicyValue(campusCode) {
+    const code = campusCode || currentCampus;
+    const campusEl = code ? document.querySelector(`.campus-content[data-campus="${code}"]`) : document;
+    if (!campusEl) return;
+
+    const typeSelect = campusEl.querySelector('.policy-type-filter') || document.getElementById('policy-type-filter');
+    const valueSelect = campusEl.querySelector('.policy-value-filter') || document.getElementById('policy-value-filter');
+    const policyType = typeSelect ? typeSelect.value : '';
+    const policyValue = valueSelect ? valueSelect.value : '';
+
+    if (!policyType) { resetTouFilter(code); return; }
+
+    const index = code ? (policyIndexes[code] || {}) : {};
+    const matchingTous = new Set();
+    if (policyValue) {
+        ((index[policyType] || {})[policyValue] || []).forEach(n => matchingTous.add(n));
+    } else {
+        campusEl.querySelectorAll('.tou-card').forEach(c => matchingTous.add(c.dataset.touName));
+    }
+
+    campusEl.querySelectorAll('.tou-card').forEach(card => {
+        card.style.display = matchingTous.has(card.dataset.touName) ? '' : 'none';
+    });
+
+    campusEl.querySelectorAll('.compare-table th, .compare-table td').forEach(c => c.style.background = '');
+    const headers = Array.from(campusEl.querySelectorAll('.compare-table thead th'));
+    const colIdx = headers.findIndex(th => th.textContent.trim() === policyType);
+    campusEl.querySelectorAll('.compare-table tbody tr').forEach(tr => {
+        const match = matchingTous.has(tr.dataset.touName);
+        tr.style.display = policyValue ? (match ? '' : 'none') : '';
+        if (colIdx >= 0 && tr.cells[colIdx]) tr.cells[colIdx].style.background = '#fff3cd';
+    });
+}
+
+function clearPolicyFilter(campusCode) {
+    const code = campusCode || currentCampus;
+    const campusEl = code ? document.querySelector(`.campus-content[data-campus="${code}"]`) : document;
+    if (!campusEl) return;
+
+    const typeSelect = campusEl.querySelector('.policy-type-filter') || document.getElementById('policy-type-filter');
+    const valueSelect = campusEl.querySelector('.policy-value-filter') || document.getElementById('policy-value-filter');
+    const clearBtn = campusEl.querySelector('.clear-filter') || document.getElementById('clear-filter');
+    if (typeSelect) typeSelect.value = '';
+    if (valueSelect) valueSelect.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    resetTouFilter(code);
+}
+
+function resetTouFilter(campusCode) {
+    const code = campusCode || currentCampus;
+    const campusEl = code ? document.querySelector(`.campus-content[data-campus="${code}"]`) : document;
+    if (!campusEl) return;
+    campusEl.querySelectorAll('.tou-card').forEach(c => c.style.display = '');
+    campusEl.querySelectorAll('.compare-table tbody tr').forEach(r => r.style.display = '');
+    campusEl.querySelectorAll('.compare-table th, .compare-table td').forEach(c => c.style.background = '');
+}
+
+// ── Single-campus init ──
+if (!IS_MULTI) {
+    $(document).ready(function() {
+        $('#loc-table').DataTable({
+            pageLength: 25, lengthMenu: [10, 25, 50, 100],
+            order: [[2, 'asc'], [0, 'asc']],
+            columns: [null, null, null, null, null, {defaultContent: ''}, {defaultContent: ''}]
+        });
+    });
+
+    // Build policy index from DOM for single-campus
+    const ALL_TOUS = {{ tous_json }};
+    const singleIndex = {};
+    for (const [touName, touData] of Object.entries(ALL_TOUS)) {
+        (touData.policies || []).forEach(p => {
+            if (!p.type) return;
+            if (!singleIndex[p.type]) singleIndex[p.type] = {};
+            const display = p.value && p.unit ? `${p.value} ${p.unit}` : p.value || p.name;
+            if (!singleIndex[p.type][display]) singleIndex[p.type][display] = [];
+            singleIndex[p.type][display].push(touName);
+        });
+    }
+    const allNames = Object.keys(ALL_TOUS);
+    for (const [pType, valMap] of Object.entries(singleIndex)) {
+        const covered = new Set(Object.values(valMap).flat());
+        const missing = allNames.filter(n => !covered.has(n));
+        if (missing.length > 0) singleIndex[pType]['(none)'] = missing;
+    }
+    policyIndexes['_single'] = singleIndex;
+    currentCampus = '_single';
+
+    const select = document.getElementById('policy-type-filter');
+    if (select) {
+        Object.keys(singleIndex).sort().forEach(pt => {
+            const opt = document.createElement('option');
+            opt.value = pt;
+            opt.textContent = pt;
+            select.appendChild(opt);
+        });
+    }
+}
+</script>
+</body>
+</html>

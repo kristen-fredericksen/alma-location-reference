@@ -1,0 +1,9 @@
+.env
+data/
+output/
+*.xlsx
+*.csv
+__pycache__/
+*.pyc
+venv/
+.venv/
