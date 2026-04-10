@@ -19,7 +19,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from alma_common import PROJECT_ROOT, LOGO_PATH, CAMPUS_NAMES, load_json
+from alma_common import PROJECT_ROOT, LOGO_PATH, CAMPUS_NAMES, CAMPUS_SORT_NAMES, load_json
 
 DATA_DIR = PROJECT_ROOT / "data"
 OUTPUT_DIR = PROJECT_ROOT / "output"
@@ -113,6 +113,7 @@ def main():
             multi_campus=True,
             campuses=all_merged,
             campus_names=CAMPUS_NAMES,
+            campus_sort_names=CAMPUS_SORT_NAMES,
             policy_types=get_policy_types(combined_tous),
             logo_b64=load_logo(),
             generated_date=date.today().strftime("%B %d, %Y"),

@@ -5,23 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Alma Location Reference{% if not multi_campus %} — {{ campus }}{% endif %}</title>
 
-<!-- DataTables CSS -->
+<!-- DataTables CSS + Buttons -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.5; }
+
+/* Skip link */
+.skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; z-index: 1000; background: #1a3a5c; color: white; padding: 8px 16px; text-decoration: none; }
+.skip-link:focus { position: static; width: auto; height: auto; }
+
+/* Screen reader only */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
 .header-bg { background: #1a3a5c; }
-.header { max-width: 1200px; margin: 0 auto; padding: 20px 30px; display: flex; align-items: center; gap: 20px; color: white; }
-.header img { height: 45px; }
-.header-text h1 { font-size: 1.5em; font-weight: 600; }
+.header { max-width: 1200px; margin: 0 auto; padding: 20px 30px; color: white; }
+.header h1 { font-size: 1.5em; font-weight: 600; }
 .nav-bg { background: #fff; border-bottom: 1px solid #ddd; }
-.nav { max-width: 1200px; margin: 0 auto; padding: 10px 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-.nav button { padding: 8px 16px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
-.nav button.active { background: #1a3a5c; color: white; border-color: #1a3a5c; }
-.nav button:hover:not(.active) { background: #f0f0f0; }
-.nav select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em; }
-{% if multi_campus %}.nav .campus-select { margin-left: auto; font-weight: 500; min-width: 250px; }{% endif %}
+.nav-inner { max-width: 1200px; margin: 0 auto; padding: 10px 30px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+.nav-inner button { padding: 8px 16px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+.nav-inner button[aria-selected="true"] { background: #1a3a5c; color: white; border-color: #1a3a5c; }
+.nav-inner button:hover:not([aria-selected="true"]) { background: #f0f0f0; }
+.nav-inner button:focus-visible, .tou-sub-nav button:focus-visible { outline: 2px solid #1a3a5c; outline-offset: 2px; }
+.nav-inner select { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em; }
+{% if multi_campus %}.nav-inner .campus-select { margin-left: auto; font-weight: 500; min-width: 250px; }{% endif %}
 .container { max-width: 1200px; margin: 0 auto; padding: 20px 30px; }
 .form-link { background: #e8f4e8; border: 1px solid #8bc48b; border-radius: 6px; padding: 15px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
 .form-link a { color: #1a3a5c; font-weight: 600; text-decoration: none; }
@@ -39,7 +48,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .fu-card-body { padding: 16px; }
 .fu-table thead th { background: #1a3a5c; color: white; font-size: 0.85em; }
 .fu-table tbody td { font-size: 0.85em; }
-.fu-hint { margin-top: 10px; font-size: 0.8em; color: #888; font-style: italic; }
+.fu-hint { margin-top: 10px; font-size: 0.8em; color: #636363; font-style: italic; }
 
 /* TOU browser */
 .tou-sub-nav { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap; }
@@ -48,17 +57,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .tou-sub-nav button:hover:not(.active) { background: #f0f0f0; }
 .tou-sub-nav select { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85em; }
 .tou-card { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; overflow: hidden; }
-.tou-card-header { background: #f8f9fa; padding: 12px 16px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.tou-card-header { background: #f8f9fa; padding: 0; border-bottom: 1px solid #eee; }
 .tou-card-header:hover { background: #eef2f7; }
-.tou-card-header h3 { font-size: 0.95em; color: #1a3a5c; }
+.tou-card-header button { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 12px 16px; background: none; border: none; cursor: pointer; font-size: 0.95em; color: #1a3a5c; font-weight: 600; text-align: left; }
+.tou-card-header button:focus-visible { outline: 2px solid #1a3a5c; outline-offset: -2px; }
 .tou-card-body { padding: 16px; display: none; }
 .tou-card-body.visible { display: block; }
-.tou-desc { font-size: 0.85em; color: #666; margin-bottom: 10px; font-style: italic; }
-.section-header { font-size: 0.8em; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.tou-desc { font-size: 0.85em; color: #555; margin-bottom: 10px; font-style: italic; }
+.section-header { font-size: 0.8em; color: #636363; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
 .section-header:first-child { margin-top: 0; }
 .policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
 .policy-item { font-size: 0.85em; padding: 4px 0; }
-.policy-item .label { color: #666; }
+.policy-item .label { color: #555; }
 .policy-item .value { font-weight: 500; }
 
 /* Comparison table */
@@ -67,98 +77,106 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .compare-table th.rotate { writing-mode: vertical-lr; transform: rotate(180deg); text-align: right; padding: 10px 6px; max-width: 40px; }
 .compare-table td { padding: 6px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
 .compare-table tr:hover { background: #f8f9fa; }
-.compare-table td.empty { color: #ccc; }
+.compare-table td.empty { color: #767676; }
 .compare-table .tou-name-cell { font-weight: 500; color: #1a3a5c; white-space: normal; min-width: 180px; }
 .compare-wrapper { overflow-x: auto; }
 
 /* Welcome prompt */
-.welcome { text-align: center; padding: 60px 20px; color: #888; }
-.welcome h2 { color: #1a3a5c; margin-bottom: 10px; font-size: 1.3em; }
-.welcome p { font-size: 1em; }
+.welcome { text-align: center; padding: 80px 20px; }
+.welcome h2 { color: #1a3a5c; margin-bottom: 16px; font-size: 1.6em; }
+.welcome p { font-size: 1em; color: #555; margin-bottom: 24px; }
+.welcome select { padding: 12px 20px; font-size: 1.1em; border: 2px solid #1a3a5c; border-radius: 6px; color: #1a3a5c; min-width: 350px; cursor: pointer; background: white; }
+
+/* Export buttons */
+.dt-export-btn, .dt-buttons .dt-export-btn { padding: 6px 14px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+.dt-export-btn:hover, .dt-buttons .dt-export-btn:hover { background: #f0f0f0; }
 
 .hidden { display: none; }
-.count { font-size: 0.85em; color: #666; margin-bottom: 15px; }
-.generated { font-size: 0.8em; color: #999; text-align: center; padding: 20px; }
+.count { font-size: 0.85em; color: #555; margin-bottom: 15px; }
+footer { margin-top: 3rem; padding: 1.5rem 1rem; border-top: 1px solid #dde2ea; text-align: center; }
+footer img { display: block; margin: 0 auto 0.75rem; width: 150px; }
+footer p { font-size: 0.85em; color: #4a5568; line-height: 1.55; }
+footer a { color: #003082; text-underline-offset: 2px; }
+footer a:hover { color: #002060; }
 </style>
 </head>
 <body>
 
-<div class="header-bg">
-<div class="header">
-    {% if logo_b64 %}
-    <img src="data:image/png;base64,{{ logo_b64 }}" alt="CUNY Library Services">
-    {% endif %}
-    <div class="header-text">
-        {% if multi_campus %}
-        <h1>Alma Location Reference</h1>
-        {% else %}
-        <h1>Alma Location Reference — {{ campus }}</h1>
-        {% endif %}
-    </div>
-</div>
-</div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
-<div class="nav-bg">
-<div class="nav">
-    <button class="active" onclick="showView('locations', event)">All Locations</button>
-    <button onclick="showView('fu-groups', event)">By Fulfillment Unit</button>
-    <button onclick="showView('tou-browser', event)">Loan Policies (TOUs)</button>
+<!-- Live region for screen reader announcements -->
+<div id="sr-announcement" class="sr-only" aria-live="polite"></div>
+
+<header class="header-bg">
+<div class="header">
     {% if multi_campus %}
-    <select class="campus-select" id="campus-select" onchange="switchCampus(this.value)">
+    <h1>Alma Location Reference</h1>
+    {% else %}
+    <h1>Alma Location Reference — {{ campus }}</h1>
+    {% endif %}
+</div>
+</header>
+
+<nav class="nav-bg" aria-label="View navigation">
+<div class="nav-inner" role="tablist" aria-label="Data views">
+    <button role="tab" aria-selected="true" aria-controls="view-locations" onclick="showView('locations', event)">All Locations</button>
+    <button role="tab" aria-selected="false" aria-controls="view-fu-groups" onclick="showView('fu-groups', event)">By Fulfillment Unit</button>
+    <button role="tab" aria-selected="false" aria-controls="view-tou-browser" onclick="showView('tou-browser', event)">Loan Policies (TOUs)</button>
+    {% if multi_campus %}
+    <select class="campus-select" id="campus-select" aria-label="Select campus" onchange="switchCampus(this.value)">
         <option value="">Select your campus...</option>
-        {% for code, name in campus_names|dictsort(by='value') %}
+        {% for code, sortname in campus_sort_names|dictsort(by='value') %}
         {% if code in campuses %}
-        <option value="{{ code }}">{{ name }}</option>
+        <option value="{{ code }}">{{ campus_names[code] }}</option>
         {% endif %}
         {% endfor %}
     </select>
     {% endif %}
 </div>
-</div>
+</nav>
 
-<div class="container">
+<main class="container" id="main-content">
     <div class="form-link">
         <div>Ready to request a new location or change?</div>
-        <a href="https://cuny.libwizard.com/f/alma-location-form" target="_blank">Open Location Request Form &rarr;</a>
+        <a href="https://cuny.libwizard.com/f/alma-location-form" target="_blank" rel="noopener">Open Location Request Form (opens in new tab) &rarr;</a>
     </div>
 
     {% if multi_campus %}
-    <!-- Welcome screen shown before campus selection -->
     <div id="welcome">
         <div class="welcome">
-            <h2>Welcome</h2>
-            <p>Select your campus from the dropdown above to view locations and policies.</p>
+            <h2>Alma Location Reference</h2>
+            <p>Select your campus to view locations and fulfillment policies.</p>
+            <label for="welcome-campus-select" class="sr-only">Select your campus</label>
+            <select id="welcome-campus-select" onchange="switchCampus(this.value); document.getElementById('campus-select').value = this.value;">
+                <option value="">Select your campus...</option>
+                {% for code, name in campus_names|dictsort(by='value') %}
+                {% if code in campuses %}
+                <option value="{{ code }}">{{ name }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
         </div>
     </div>
 
-    <!-- Per-campus content (hidden until selected) -->
     {% for campus_code, campus_data in campuses|dictsort %}
     <div class="campus-content hidden" data-campus="{{ campus_code }}">
 
-        <!-- View 1: Locations -->
-        <div class="view-panel" data-view="locations">
+        <div class="view-panel" role="tabpanel" data-view="locations" aria-label="All locations">
             <div class="loc-dt-wrapper">
             <table class="loc-table display" data-campus="{{ campus_code }}" style="width:100%">
+                <caption class="sr-only">Locations for {{ campus_names[campus_code] }}</caption>
                 <thead>
                     <tr>
-                        <th>Code</th>
-                        <th>Name</th>
-                        <th>Library</th>
-                        <th>Type</th>
-                        <th>Fulfillment Unit</th>
-                        <th>Call Number Type</th>
-                        <th>Suppressed</th>
+                        <th>Code</th><th>Name</th><th>Library</th><th>Type</th>
+                        <th>Fulfillment Unit</th><th>Call Number Type</th><th>Suppressed</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for lib in campus_data.libraries %}
                     {% for loc in lib.locations %}
                     <tr>
-                        <td>{{ loc.code }}</td>
-                        <td>{{ loc.name }}</td>
-                        <td>{{ lib.name }}</td>
-                        <td>{{ loc.type }}</td>
-                        <td>{{ loc.fulfillment_unit_code }}</td>
+                        <td>{{ loc.code }}</td><td>{{ loc.name }}</td><td>{{ lib.name }}</td>
+                        <td>{{ loc.type }}</td><td>{{ loc.fulfillment_unit_code }}</td>
                         <td>{{ loc.call_number_type or '' }}</td>
                         <td>{{ 'Yes' if loc.suppress_from_publishing else '' }}</td>
                     </tr>
@@ -169,17 +187,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
             </div>
         </div>
 
-        <!-- View 2: FU Groups -->
-        <div class="view-panel hidden" data-view="fu-groups">
+        <div class="view-panel hidden" role="tabpanel" data-view="fu-groups" aria-label="Locations by fulfillment unit">
             <p class="count">Locations that share a fulfillment unit circulate the same way. Use the location code when filling out the request form.</p>
             {% for fu_name, fu_data in campus_data.fu_groups|dictsort %}
             <div class="fu-card">
                 <div class="fu-card-header">
-                    <span>{{ fu_name }}</span>
+                    <h3 style="margin:0; font-size:1em;">{{ fu_name }}</h3>
                     <span>{{ fu_data.locations|length }} location{{ 's' if fu_data.locations|length != 1 else '' }}</span>
                 </div>
                 <div class="fu-card-body">
                     <table class="fu-table display" style="width:100%">
+                        <caption class="sr-only">Locations in {{ fu_name }} fulfillment unit</caption>
                         <thead><tr><th>Code</th><th>Name</th><th>Library</th></tr></thead>
                         <tbody>
                             {% for loc in fu_data.locations %}
@@ -193,24 +211,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
             {% endfor %}
         </div>
 
-        <!-- View 3: TOU Browser -->
-        <div class="view-panel hidden" data-view="tou-browser">
+        <div class="view-panel hidden" role="tabpanel" data-view="tou-browser" aria-label="Loan policies">
             <div class="tou-sub-nav">
                 <button class="active" onclick="showTouSubView('cards', event, '{{ campus_code }}')">Card View</button>
                 <button onclick="showTouSubView('compare', event, '{{ campus_code }}')">Table View</button>
-                <select class="policy-type-filter" data-campus="{{ campus_code }}" onchange="onPolicyTypeChange(this.value, '{{ campus_code }}')">
+                <select class="policy-type-filter" aria-label="Filter by policy type" data-campus="{{ campus_code }}" onchange="onPolicyTypeChange(this.value, '{{ campus_code }}')">
                     <option value="">Filter by policy type...</option>
                 </select>
-                <select class="policy-value-filter hidden" data-campus="{{ campus_code }}" onchange="filterTouByPolicyValue('{{ campus_code }}')">
+                <select class="policy-value-filter hidden" aria-label="Filter by policy value" data-campus="{{ campus_code }}" onchange="filterTouByPolicyValue('{{ campus_code }}')">
                     <option value="">All values</option>
                 </select>
-                <button class="clear-filter hidden" data-campus="{{ campus_code }}" onclick="clearPolicyFilter('{{ campus_code }}')">Clear</button>
+                <button class="clear-filter hidden" aria-label="Clear policy filter" data-campus="{{ campus_code }}" onclick="clearPolicyFilter('{{ campus_code }}')">Clear</button>
+                <button class="dt-export-btn" onclick="exportCompareTable('{{ campus_code }}')" style="margin-left:auto;">Export CSV</button>
             </div>
             <div class="tou-cards-container" data-campus="{{ campus_code }}">
                 {% for tou_name, tou_data in campus_data.all_tous|dictsort %}
                 <div class="tou-card" data-tou-name="{{ tou_name }}">
-                    <div class="tou-card-header" onclick="this.nextElementSibling.classList.toggle('visible')">
-                        <h3>{{ tou_name }}</h3>
+                    <div class="tou-card-header">
+                        <button aria-expanded="false" onclick="toggleTouCard(this)">
+                            <h3 style="margin:0;">{{ tou_name }}</h3>
+                        </button>
                     </div>
                     <div class="tou-card-body">
                         {% if tou_data.tou_description %}
@@ -236,6 +256,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
             <div class="tou-compare-container hidden" data-campus="{{ campus_code }}">
                 <div class="compare-wrapper">
                     <table class="compare-table">
+                        <caption class="sr-only">Loan policy comparison for {{ campus_names[campus_code] }}</caption>
                         <thead>
                             <tr>
                                 <th>TOU Name</th>
@@ -267,10 +288,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     {% endfor %}
 
     {% else %}
-    {# Single-campus mode (unchanged) #}
-    <div id="view-locations">
+    {# Single-campus mode #}
+    <div id="view-locations" role="tabpanel" aria-label="All locations">
         <div class="loc-dt-wrapper">
         <table id="loc-table" class="display" style="width:100%">
+            <caption class="sr-only">Locations for {{ campus }}</caption>
             <thead>
                 <tr>
                     <th>Code</th><th>Name</th><th>Library</th><th>Type</th>
@@ -292,13 +314,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         </table>
         </div>
     </div>
-    <div id="view-fu-groups" class="hidden">
+    <div id="view-fu-groups" class="hidden" role="tabpanel" aria-label="Locations by fulfillment unit">
         <p class="count">Locations that share a fulfillment unit circulate the same way.</p>
         {% for fu_name, fu_data in fu_groups|dictsort %}
         <div class="fu-card">
-            <div class="fu-card-header"><span>{{ fu_name }}</span><span>{{ fu_data.locations|length }} locations</span></div>
+            <div class="fu-card-header"><h3 style="margin:0; font-size:1em;">{{ fu_name }}</h3><span>{{ fu_data.locations|length }} locations</span></div>
             <div class="fu-card-body">
                 <table class="fu-table display" style="width:100%">
+                    <caption class="sr-only">Locations in {{ fu_name }} fulfillment unit</caption>
                     <thead><tr><th>Code</th><th>Name</th><th>Library</th></tr></thead>
                     <tbody>
                         {% for loc in fu_data.locations %}
@@ -310,22 +333,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         </div>
         {% endfor %}
     </div>
-    <div id="view-tou-browser" class="hidden">
+    <div id="view-tou-browser" class="hidden" role="tabpanel" aria-label="Loan policies">
         <div class="tou-sub-nav">
             <button class="active" onclick="showTouSubView('cards', event)">Card View</button>
             <button onclick="showTouSubView('compare', event)">Table View</button>
-            <select id="policy-type-filter" onchange="onPolicyTypeChange(this.value)">
+            <select id="policy-type-filter" aria-label="Filter by policy type" onchange="onPolicyTypeChange(this.value)">
                 <option value="">Filter by policy type...</option>
             </select>
-            <select id="policy-value-filter" onchange="filterTouByPolicyValue()" class="hidden">
+            <select id="policy-value-filter" aria-label="Filter by policy value" onchange="filterTouByPolicyValue()" class="hidden">
                 <option value="">All values</option>
             </select>
-            <button id="clear-filter" class="hidden" onclick="clearPolicyFilter()">Clear</button>
+            <button id="clear-filter" class="hidden" aria-label="Clear policy filter" onclick="clearPolicyFilter()">Clear</button>
+            <button class="dt-export-btn" onclick="exportCompareTable()" style="margin-left:auto;">Export CSV</button>
         </div>
         <div id="tou-cards">
             {% for tou_name, tou_data in all_tous|dictsort %}
             <div class="tou-card" data-tou-name="{{ tou_name }}">
-                <div class="tou-card-header" onclick="this.nextElementSibling.classList.toggle('visible')"><h3>{{ tou_name }}</h3></div>
+                <div class="tou-card-header">
+                    <button aria-expanded="false" onclick="toggleTouCard(this)">
+                        <h3 style="margin:0;">{{ tou_name }}</h3>
+                    </button>
+                </div>
                 <div class="tou-card-body">
                     {% if tou_data.tou_description %}<div class="tou-desc">{{ tou_data.tou_description }}</div>{% endif %}
                     {% for section, policies in group_policies(tou_data.policies).items() %}
@@ -345,6 +373,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         <div id="tou-compare" class="hidden">
             <div class="compare-wrapper">
                 <table class="compare-table">
+                    <caption class="sr-only">Loan policy comparison</caption>
                     <thead><tr><th>TOU Name</th>{% for pt in policy_types %}<th class="rotate">{{ pt }}</th>{% endfor %}</tr></thead>
                     <tbody>
                         {% for tou_name, tou_data in all_tous|dictsort %}
@@ -362,13 +391,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         </div>
     </div>
     {% endif %}
-</div>
+</main>
 
-<div class="generated">Generated {{ generated_date }} | Data is one day behind (Analytics)</div>
+<footer>
+    {% if logo_b64 %}
+    <img src="data:image/png;base64,{{ logo_b64 }}" alt="CUNY Library Services">
+    {% endif %}
+    <p>Open a ticket with OLS Systems at <a href="mailto:support@cuny-ols.libanswers.com">support@cuny-ols.libanswers.com</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8em; color: #636363;">Generated {{ generated_date }} | Data is one day behind (Analytics)</p>
+</footer>
 
-<!-- jQuery + DataTables JS -->
+<!-- jQuery + DataTables JS + Buttons -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
 <script>
 const IS_MULTI = {{ 'true' if multi_campus else 'false' }};
@@ -376,12 +413,23 @@ let currentCampus = null;
 let currentView = 'locations';
 const initializedTables = new Set();
 
-// ── Campus switching (multi-campus mode) ──
+function announce(msg) {
+    const el = document.getElementById('sr-announcement');
+    if (el) { el.textContent = ''; setTimeout(() => { el.textContent = msg; }, 100); }
+}
+
+// ── TOU card toggle ──
+function toggleTouCard(btn) {
+    const body = btn.closest('.tou-card-header').nextElementSibling;
+    const expanded = body.classList.toggle('visible');
+    btn.setAttribute('aria-expanded', expanded);
+}
+
+// ── Campus switching ──
 function switchCampus(code) {
     if (!code) return;
     currentCampus = code;
 
-    // Hide welcome, show selected campus
     const welcome = document.getElementById('welcome');
     if (welcome) welcome.classList.add('hidden');
 
@@ -389,7 +437,6 @@ function switchCampus(code) {
         el.classList.toggle('hidden', el.dataset.campus !== code);
     });
 
-    // Show the correct view within the campus
     const campusEl = document.querySelector(`.campus-content[data-campus="${code}"]`);
     if (campusEl) {
         campusEl.querySelectorAll('.view-panel').forEach(vp => {
@@ -397,11 +444,17 @@ function switchCampus(code) {
         });
     }
 
-    // Initialize DataTables for this campus if not done yet
     initTablesForCampus(code);
-
-    // Build policy index for this campus
     buildPolicyIndexForCampus(code);
+
+    // Sync both campus selects
+    const navSelect = document.getElementById('campus-select');
+    const welcomeSelect = document.getElementById('welcome-campus-select');
+    if (navSelect) navSelect.value = code;
+    if (welcomeSelect) welcomeSelect.value = code;
+
+    const campusName = navSelect ? navSelect.options[navSelect.selectedIndex]?.text : code;
+    announce('Showing data for ' + campusName);
 }
 
 function initTablesForCampus(code) {
@@ -410,10 +463,11 @@ function initTablesForCampus(code) {
         const locTable = document.querySelector(`.loc-table[data-campus="${code}"]`);
         if (locTable) {
             $(locTable).DataTable({
-                pageLength: 25,
-                lengthMenu: [10, 25, 50, 100],
+                pageLength: 25, lengthMenu: [10, 25, 50, 100],
                 order: [[2, 'asc'], [0, 'asc']],
-                columns: [null, null, null, null, null, {defaultContent: ''}, {defaultContent: ''}]
+                columns: [null, null, null, null, null, {defaultContent: ''}, {defaultContent: ''}],
+                dom: 'Bfrtip',
+                buttons: [{extend: 'csv', text: 'Export CSV', className: 'dt-export-btn'}]
             });
         }
         initializedTables.add(key);
@@ -426,9 +480,7 @@ function initFuTablesForCampus(code) {
         const campusEl = document.querySelector(`.campus-content[data-campus="${code}"]`);
         if (campusEl) {
             $(campusEl).find('.fu-table').DataTable({
-                pageLength: 25,
-                lengthMenu: [10, 25, 50, 100],
-                order: [[0, 'asc']]
+                pageLength: 25, lengthMenu: [10, 25, 50, 100], order: [[0, 'asc']]
             });
         }
         initializedTables.add(key);
@@ -438,8 +490,8 @@ function initFuTablesForCampus(code) {
 // ── View switching ──
 function showView(view, evt) {
     currentView = view;
-    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-    evt.target.classList.add('active');
+    document.querySelectorAll('.nav-inner [role="tab"]').forEach(b => b.setAttribute('aria-selected', 'false'));
+    evt.target.setAttribute('aria-selected', 'true');
 
     if (IS_MULTI) {
         if (!currentCampus) return;
@@ -502,7 +554,6 @@ function buildPolicyIndexForCampus(code) {
         });
     });
 
-    // Add "(none)" entries
     const allTouNames = Array.from(campusEl.querySelectorAll('.tou-card')).map(c => c.dataset.touName);
     for (const [pType, valMap] of Object.entries(index)) {
         const covered = new Set(Object.values(valMap).flat());
@@ -512,14 +563,12 @@ function buildPolicyIndexForCampus(code) {
 
     policyIndexes[code] = index;
 
-    // Populate the type dropdown for this campus
     const select = campusEl.querySelector('.policy-type-filter');
     if (select) {
         select.innerHTML = '<option value="">Filter by policy type...</option>';
         Object.keys(index).sort().forEach(pt => {
             const opt = document.createElement('option');
-            opt.value = pt;
-            opt.textContent = pt;
+            opt.value = pt; opt.textContent = pt;
             select.appendChild(opt);
         });
     }
@@ -550,8 +599,7 @@ function onPolicyTypeChange(policyType, campusCode) {
         if (values['(none)']) sorted.push('(none)');
         sorted.forEach(v => {
             const opt = document.createElement('option');
-            opt.value = v;
-            opt.textContent = v === '(none)' ? '(none)' : v;
+            opt.value = v; opt.textContent = v === '(none)' ? '(none)' : v;
             valueSelect.appendChild(opt);
         });
         valueSelect.classList.remove('hidden');
@@ -598,7 +646,6 @@ function clearPolicyFilter(campusCode) {
     const code = campusCode || currentCampus;
     const campusEl = code ? document.querySelector(`.campus-content[data-campus="${code}"]`) : document;
     if (!campusEl) return;
-
     const typeSelect = campusEl.querySelector('.policy-type-filter') || document.getElementById('policy-type-filter');
     const valueSelect = campusEl.querySelector('.policy-value-filter') || document.getElementById('policy-value-filter');
     const clearBtn = campusEl.querySelector('.clear-filter') || document.getElementById('clear-filter');
@@ -617,6 +664,37 @@ function resetTouFilter(campusCode) {
     campusEl.querySelectorAll('.compare-table th, .compare-table td').forEach(c => c.style.background = '');
 }
 
+// ── Export comparison table to CSV ──
+function exportCompareTable(campusCode) {
+    const scope = campusCode
+        ? document.querySelector(`.tou-compare-container[data-campus="${campusCode}"]`)
+        : document.getElementById('tou-compare');
+    if (!scope) return;
+    const table = scope.querySelector('.compare-table');
+    if (!table) return;
+
+    const rows = [];
+    table.querySelectorAll('tr').forEach(tr => {
+        if (tr.style.display === 'none') return;
+        const cells = [];
+        tr.querySelectorAll('th, td').forEach(cell => {
+            let text = cell.textContent.trim().replace(/"/g, '""');
+            if (text === '\u2014') text = '';
+            cells.push('"' + text + '"');
+        });
+        rows.push(cells.join(','));
+    });
+
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'loan_policy_comparison' + (campusCode ? '_' + campusCode : '') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 // ── Single-campus init ──
 if (!IS_MULTI) {
     $(document).ready(function() {
@@ -627,7 +705,6 @@ if (!IS_MULTI) {
         });
     });
 
-    // Build policy index from DOM for single-campus
     const ALL_TOUS = {{ tous_json }};
     const singleIndex = {};
     for (const [touName, touData] of Object.entries(ALL_TOUS)) {
@@ -652,8 +729,7 @@ if (!IS_MULTI) {
     if (select) {
         Object.keys(singleIndex).sort().forEach(pt => {
             const opt = document.createElement('option');
-            opt.value = pt;
-            opt.textContent = pt;
+            opt.value = pt; opt.textContent = pt;
             select.appendChild(opt);
         });
     }

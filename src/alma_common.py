@@ -15,7 +15,7 @@ import requests
 PROJECT_ROOT = Path(__file__).parent.parent
 API_KEYS_PATH = PROJECT_ROOT.parent / "api_keys.env"
 BASE_URL = "https://api-na.hosted.exlibrisgroup.com"
-LOGO_PATH = PROJECT_ROOT / "assets" / "logo_white.png"
+LOGO_PATH = PROJECT_ROOT / "assets" / "logo_color.png"
 
 # System locations to exclude (Alma creates these automatically)
 EXCLUDED_LOCATIONS = {"IN_RS_REQ", "OUT_RS_REQ"}
@@ -43,6 +43,11 @@ CAMPUS_NAMES = {
     "QC": "Queens College",
     "SI": "College of Staten Island",
     "YC": "York College",
+}
+
+# Sort keys — strip leading "The " so City College sorts under C
+CAMPUS_SORT_NAMES = {
+    code: name.removeprefix("The ") for code, name in CAMPUS_NAMES.items()
 }
 
 # Alma institution codes used in Analytics (01CUNY_{campus})
