@@ -86,7 +86,25 @@ def main():
     else:
         campus = sys.argv[1].upper()
         config_data = load_json(DATA_DIR / f"{campus}_config_data.json")
-        analytics_data = load_json(DATA_DIR / f"{campus}_analytics_tou_data.json")
+
+        per_campus_analytics = DATA_DIR / f"{campus}_analytics_tou_data.json"
+        all_analytics_path = DATA_DIR / "all_analytics_tou_data.json"
+        if per_campus_analytics.exists():
+            analytics_data = load_json(per_campus_analytics)
+        elif all_analytics_path.exists():
+            all_analytics = load_json(all_analytics_path)
+            if campus in all_analytics:
+                analytics_data = all_analytics[campus]
+                print(f"  Using {campus} entry from all_analytics_tou_data.json")
+            else:
+                print(f"Error: {campus} not found in all_analytics_tou_data.json.")
+                print("Run: python3 src/pull_analytics_config.py --all")
+                sys.exit(1)
+        else:
+            print("Error: No analytics data found.")
+            print("Run: python3 src/pull_analytics_config.py --all")
+            sys.exit(1)
+
         merged = merge_campus(campus, config_data, analytics_data)
 
         total_locs = sum(len(lib["locations"]) for lib in merged["libraries"])

@@ -117,26 +117,69 @@ def main():
     print(f"  Alma Config Pull — {len(campuses)} campus(es)")
     print(f"{'='*55}\n")
 
-    all_data = {}
+    # Load existing data so a failed campus this run doesn't wipe out a previous
+    # good pull. CUNY institutions always have ≥1 library, so an empty result
+    # means the API call failed (typically DAILY_THRESHOLD).
+    all_data_path = DATA_DIR / "all_config_data.json"
+    if args.all and all_data_path.exists():
+        with open(all_data_path) as f:
+            preserved = json.load(f)
+    else:
+        preserved = {}
+
+    fresh_data = {}
+    failures = []
     for campus in campuses:
-        all_data[campus] = pull_campus(campus)
+        result = pull_campus(campus)
+        if result["libraries"]:
+            fresh_data[campus] = result
+        else:
+            failures.append(campus)
 
     if args.all:
-        output_path = DATA_DIR / "all_config_data.json"
+        merged = {**preserved, **fresh_data}
+        output_path = all_data_path
         with open(output_path, "w") as f:
-            json.dump(all_data, f, indent=2)
+            json.dump(merged, f, indent=2)
+        total_locs = sum(
+            sum(len(lib["locations"]) for lib in cd["libraries"])
+            for cd in merged.values()
+        )
     else:
         campus = campuses[0]
         output_path = DATA_DIR / f"{campus}_config_data.json"
-        with open(output_path, "w") as f:
-            json.dump(all_data[campus], f, indent=2)
+        if campus in fresh_data:
+            with open(output_path, "w") as f:
+                json.dump(fresh_data[campus], f, indent=2)
+            total_locs = sum(
+                len(lib["locations"]) for lib in fresh_data[campus]["libraries"]
+            )
+        elif output_path.exists():
+            with open(output_path) as f:
+                prev = json.load(f)
+            print(f"\n  Pull failed for {campus} — keeping previous "
+                  f"{output_path.name}")
+            total_locs = sum(len(lib["locations"]) for lib in prev["libraries"])
+        else:
+            with open(output_path, "w") as f:
+                json.dump({
+                    "campus": campus,
+                    "name": CAMPUS_NAMES.get(campus, campus),
+                    "libraries": [],
+                }, f, indent=2)
+            total_locs = 0
 
-    total_locs = sum(
-        sum(len(lib["locations"]) for lib in cd["libraries"])
-        for cd in all_data.values()
-    )
     print(f"\nSaved to: {output_path}")
-    print(f"  Total locations across all campuses: {total_locs}")
+    print(f"  Total locations: {total_locs}")
+
+    if failures:
+        print(f"\n  WARNING: {len(failures)} campus(es) failed to refresh: "
+              f"{', '.join(failures)}")
+        if args.all:
+            kept = [c for c in failures if c in preserved]
+            if kept:
+                print(f"  Kept previous data for: {', '.join(kept)}")
+        print("  Likely cause: daily API quota exhausted. Try again later.")
 
 
 if __name__ == "__main__":
